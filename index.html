@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Formulário de Solicitação de Preço</title>
+  <style>
+    body { font-family: Calibri, sans-serif; padding: 20px; background: #e1fadc; max-width: 800px; margin: auto; }
+    label { display: block; margin: 15px 0 5px; font-weight: bold; }
+    select, input, textarea, button { font-family: Calibri; width: 100%; padding: 10px; margin-bottom: 15px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; }
+    button { background-color: #004132; color: white; font-weight: bold; cursor: pointer; border: none; }
+    button:hover { background-color: #41de00; }
+    .hidden { display: none; }
+    pre { background: #fff; padding: 15px; border: 1px solid #ddd; white-space: pre-wrap; font-family: 'Courier New', Courier, monospace; line-height: 1.6; }
+    h2, h3 { color: #333; }
+    
+    #produtos-checkboxes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+      background: #fff;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    #produtos-checkboxes div {
+      display: flex;
+      align-items: center;
+    }
+    #produtos-checkboxes label {
+      font: 500 12px Calibri;
+      margin: 0 0 0 5px;
+      text-transform: none; 
+    }
+    #produtos-checkboxes input[type="checkbox"] {
+      width: auto;
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <h2>FORMULÁRIO DE SOLICITAÇÃO DE PREÇO</h2>
+
+    <label for="tipo">TIPO DE CASO</label>
+  <select id="tipo" onchange="mostrarCampos()">
+    <option value="">SELECIONE</option>
+    <option value="churn">CHURN</option>
+    <option value="ge">CRIAÇÃO DE UMA NOVA CONTA</option>
+    <option value="isencao_saque">ISENÇÃO DA TAXA DE SAQUE</option>
+    <option value="reneg">RENEGOCIAÇÃO</option>
+    <option value="reneg_reprec">RENEGOCIAÇÃO APÓS REPRECIFICAÇÃO</option>
+    <option value="rev">REVERSÃO</option>
+    <option value="rentab">RENTABILIZAÇÃO</option>
+  </select>
+
+  <div id="formulario"></div>
+  <button onclick="gerarMacro()">GERAR MACRO</button>
+  <h3>MACRO GERADA:</h3>
+  <pre id="resultado"></pre>
+
+  <script>
+    function toggleTierGe() {
+        const isGeSelect = document.getElementById("is_ge");
+        const tierGeWrapper = document.getElementById("tier-ge-wrapper");
+        if (isGeSelect && tierGeWrapper) {
+            tierGeWrapper.style.display = (isGeSelect.value === "SIM") ? "block" : "none";
+        }
+    }
+
+    function toggleThreadLink() {
+        const aprovadoSelect = document.getElementById("aprovado");
+        const threadWrapper = document.getElementById("thread-wrapper");
+        if (aprovadoSelect && threadWrapper) {
+            threadWrapper.style.display = (aprovadoSelect.value === "SIM") ? "block" : "none";
+        }
+    }
+
+    function toggleIsencaoAnterior() {
+        const bancoSelect = document.getElementById("banco_cliente");
+        const isencaoWrapper = document.getElementById("isencao-anterior-wrapper");
+        if (bancoSelect && isencaoWrapper) {
+            const show = bancoSelect.value === "BRADESCO" || bancoSelect.value === "OUTROS";
+            isencaoWrapper.style.display = show ? "block" : "none";
+        }
+    }
+
+    function mostrarCampos() {
+      const tipo = document.getElementById("tipo").value;
+      const container = document.getElementById("formulario");
+      let html = "";
+      
+      const tierOptions = `
+        <option value="">SELECIONE UM TIER</option>
+        <option value="0-7k">0-7k</option><option value="7k-15k">7k-15k</option><option value="15k-30k">15k-30k</option>
+        <option value="30k-50k">30k-50k</option><option value="50k-100k">50k-100k</option><option value="100k-250k">100k-250k</option>
+        <option value="250k-500k">250k-500k</option><option value="500k-1M">500k-1M</option><option value="1M+">1M+</option>
+      `;
+
+      const idFieldHtml = `<label>ID:</label><input id="id_cliente" type="text" />`;
+      const tierContaHtml = `<label>TIER DA CONTA:</label><select id="tier_conta">${tierOptions}</select>`;
+      
+      const geQuestionHtml = `
+        <label>ESSE CLIENTE COMPÕE UM GRUPO ECONÔMICO?</label>
+        <select id="is_ge" onchange="toggleTierGe()"><option>NÃO</option><option>SIM</option></select>
+        <div id="tier-ge-wrapper" style="display: none;">
+            <label>TIER DO GE:</label><select id="tier_ge">${tierOptions}</select>
+        </div>
+        <input id="dash_ge_extra" type="text" style="display: none;" />
+        <input id="pnl_ge_extra" type="text" style="display: none;" />
+      `;
+      
+      const pricingValidationHtml = `
+        <label>CONDIÇÃO JÁ FOI APROVADA POR PRICING?</label>
+        <select id="aprovado" onchange="toggleThreadLink()">
+            <option>NÃO</option><option>SIM</option>
+        </select>
+        <div id="thread-wrapper" style="display: none;">
+            <label>LINK DA THREAD:</label><input id="thread" type="text" />
+        </div>
+      `;
+
+      const produtosCheckboxHtml = `
+        <label>PRODUTOS NEGOCIADOS:</label>
+        <div id="produtos-checkboxes">
+          <div><input type="checkbox" id="prod_mdr" name="produto" value="MDR"><label for="prod_mdr">MDR</label></div>
+          <div><input type="checkbox" id="prod_rav" name="produto" value="RAV"><label for="prod_rav">RAV</label></div>
+          <div><input type="checkbox" id="prod_pix" name="produto" value="PIX"><label for="prod_pix">PIX</label></div>
+          <div><input type="checkbox" id="prod_boleto" name="produto" value="BOLETO"><label for="prod_boleto">BOLETO</label></div>
+          <div><input type="checkbox" id="prod_antifraude" name="produto" value="ANTIFRAUDE"><label for="prod_antifraude">ANTIFRAUDE</label></div>
+          <div><input type="checkbox" id="prod_garantia" name="produto" value="GARANTIA"><label for="prod_garantia">GARANTIA</label></div>
+          <div><input type="checkbox" id="prod_gateway" name="produto" value="GATEWAY"><label for="prod_gateway">GATEWAY</label></div>
+          <div><input type="checkbox" id="prod_saque" name="produto" value="SAQUE"><label for="prod_saque">SAQUE</label></div>
+        </div>
+      `;
+      
+      const volumeAdicionalHtml = `
+        <label>POSSUI VOLUME ADICIONAL?</label><select id="volume"><option>NÃO</option><option>SIM</option></select>
+        <label style="display: none;">PRINT DO COMPROVANTE DE FATURAMENTO (SE SIM)</label><input id="faturamento" type="text" style="display: none;" />
+      `;
+
+      if (tipo === "rentab" || tipo === "reneg" || tipo === "rev" || tipo === "churn") {
+        let formFields = `
+          ${idFieldHtml}
+          ${tierContaHtml}
+          ${pricingValidationHtml}
+          ${produtosCheckboxHtml}
+          ${geQuestionHtml}
+          <label style="display: none;">PRINT DO DASH CLIENTE:</label><input id="dash_cleinte" type="text" style="display: none;" />
+          <label style="display: none;">PRINT DO PNL RENEG COM AS CONDIÇÕES ATUAIS E AS NOVAS:</label><input id="PnL" type="text" style="display: none;" />
+          <label>CLIENTE POSSUI PROPOSTA DE CONCORRENTE?</label><select id="concorrente"><option>NÃO</option><option>SIM</option></select>
+          <label style="display: none;">PRINT DA PROPOSTA DO CONCORRENTE (SE SIM):</label><input id="taxa" type="text" style="display: none;" />
+        `;
+        if (tipo !== 'rentab') {
+          formFields += `<label style="display: none;">PRINT DO COMPARATIVO DE TAXAS (SE SIM):</label><input id="comparativo" type="text" style="display: none;" />`;
+        }
+        formFields += volumeAdicionalHtml;
+        formFields += `<label>JUSTIFICATIVA:</label><textarea id="justificativa"></textarea>`;
+        html = formFields;
+      } else if (tipo === "ge") {
+        html = `
+          ${tierContaHtml}
+          <label>TIER DO GE:</label><select id="tier_ge">${tierOptions}</select>
+          <label>ID DO CLIENTE APROVADO ANTERIORMENTE:</label><input id="id_aprovado" type="text" />
+          <label style="display: none;">PRINT DO DASH CLIENTE DA COTAÇÃO ESPELHADA:</label><input id="dash_cleinte" type="text" style="display: none;" />
+          <label style="display: none;">PRINT DO DASH CLIENTE DO GE:</label><input id="dash_ge" type="text" style="display: none;" />
+          <label style="display: none;">PRINT DO PNL RENEG COM AS CONDIÇÕES ATUAIS E AS NOVAS:</label><input id="PnL" type="text" style="display: none;" />
+          <label>JUSTIFICATIVA:</label><textarea id="justificativa"></textarea>
+        `;
+      } else if (tipo === "isencao_saque") {
+        html = `
+          ${idFieldHtml}
+          ${pricingValidationHtml}
+          <label>QUAL É O BANCO UTILIZADO PELO CLIENTE?</label>
+          <select id="banco_cliente" onchange="toggleIsencaoAnterior()">
+              <option value="">SELECIONE UM BANCO</option>
+              <option value="STONE">STONE</option>
+              <option value="BRADESCO">BRADESCO</option>
+              <option value="OUTROS">OUTROS</option>
+          </select>
+          <div id="isencao-anterior-wrapper" style="display: none;">
+              <label>O CLIENTE JÁ POSSUÍA ISENÇÃO DE SAQUE?</label>
+              <select id="tinha_isencao"><option>NÃO</option><option>SIM</option></select>
+          </div>
+          <label>NÚMERO DE RECEBEDORES:</label><input id="num_recebedores" type="text" />
+          <label>JUSTIFICATIVA:</label><textarea id="justificativa"></textarea>
+          <input id="dash_cliente_isencao" type="text" style="display: none;" />
+          <input id="comprovante_banco" type="text" style="display: none;" />
+          <input id="comprovante_recebedores" type="text" style="display: none;" />
+          <input id="comprovante_isencao_anterior" type="text" style="display: none;" />
+        `;
+      } else if (tipo === "reneg_reprec") {
+        html = `
+            ${idFieldHtml}
+            ${pricingValidationHtml}
+            <label>MÊS E ANO REPRECIFICAÇÃO:</label><input type="text" id="mes_ano_reprec" />
+            ${produtosCheckboxHtml}
+            <label>A PROPOSTA ESTÁ ACIMA DO SUGERIDO POR PRICING:</label><select id="acima_sugerido"><option>NÃO</option><option>SIM</option></select>
+            <label>JUSTIFICATIVA:</label><textarea id="justificativa"></textarea>
+            <input type="text" id="dash_cliente_reprec" style="display: none;" />
+            <input type="text" id="pnl_reprec" style="display: none;" />
+        `;
+      }
+      container.innerHTML = html;
+      toggleTierGe();
+      toggleThreadLink();
+      toggleIsencaoAnterior();
+    }
+
+    function gerarMacro() {
+      const tipoSelect = document.getElementById("tipo");
+      const tipo = tipoSelect.value;
+      const tipoTexto = tipoSelect.options[tipoSelect.selectedIndex].text;
+      
+      const textLines = [];
+      const imageLines = [];
+
+      if (!tipo) {
+        document.getElementById("resultado").innerText = "SELECIONE UM TIPO DE CASO PRIMEIRO.";
+        return;
+      }
+
+      const addTextLine = (label, elementId) => {
+        const element = document.getElementById(elementId);
+        if (element && element.value) {
+          textLines.push(`${label.toUpperCase()}: ${element.value.trim().toUpperCase()}`);
+        }
+      };
+
+      const addImageLine = (label, elementId) => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          imageLines.push(`- ${label.toUpperCase()}: ${element.value.trim().toUpperCase()}`);
+        }
+      };
+      
+      const addStaticTextLine = (text) => {
+        textLines.push(text.toUpperCase());
+      };
+
+      textLines.push(`TIPO DE NEGOCIAÇÃO: ${tipoTexto.toUpperCase()}`);
+      
+      if (tipo === "ge") {
+        addTextLine("Tier da Conta", "tier_conta");
+        addTextLine("Tier do GE", "tier_ge");
+        addTextLine("ID DO CLIENTE APROVADO ANTERIORMENTE", "id_aprovado");
+        addImageLine("Print do DASH Cliente da cotação espelhada", "dash_cleinte");
+        addImageLine("Print do DASH Cliente do GE", "dash_ge");
+        addImageLine("Print do PNL Reneg com as condições atuais e as novas", "PnL");
+
+      } else if (tipo === "isencao_saque") {
+        addTextLine("ID", "id_cliente");
+        const aprovadoSelect = document.getElementById("aprovado");
+        if(aprovadoSelect){
+            if (aprovadoSelect.value === "SIM") {
+              addTextLine("LINK DA THREAD", "thread");
+            } else {
+              addStaticTextLine(`CONDIÇÃO JÁ FOI APROVADA POR PRICING? ${aprovadoSelect.value}`);
+            }
+        }
+        addTextLine("Qual o banco utilizado", "banco_cliente");
+        addTextLine("Número de Recebedores", "num_recebedores");
+        const bancoSelect = document.getElementById("banco_cliente");
+        if (bancoSelect && (bancoSelect.value === "BRADESCO" || bancoSelect.value === "OUTROS")) {
+            const tinhaIsencaoSelect = document.getElementById("tinha_isencao");
+            if (tinhaIsencaoSelect) {
+                addStaticTextLine(`JÁ POSSUÍA ISENÇÃO DE SAQUE? ${tinhaIsencaoSelect.value}`);
+                if (tinhaIsencaoSelect.value === "SIM") {
+                    addImageLine("Comprovante que o cliente era isento", "comprovante_isencao_anterior");
+                }
+            }
+        }
+        addImageLine("Dash Cliente", "dash_cliente_isencao");
+        addImageLine("Comprovante da conta bancária", "comprovante_banco");
+        addImageLine("Comprovante do número de recebedores", "comprovante_recebedores");
+      
+      } else if (tipo === "reneg_reprec") {
+        addTextLine("ID", "id_cliente");
+        const aprovadoSelect = document.getElementById("aprovado");
+        if(aprovadoSelect){
+            if (aprovadoSelect.value === "SIM") {
+                addTextLine("LINK DA THREAD", "thread");
+            } else {
+                addStaticTextLine(`CONDIÇÃO JÁ FOI APROVADA POR PRICING? ${aprovadoSelect.value}`);
+            }
+        }
+        addTextLine("MÊS E ANO REPRECIFICAÇÃO", "mes_ano_reprec");
+        const selectedProdutos = [];
+        const produtoCheckboxes = document.querySelectorAll('#produtos-checkboxes input[type="checkbox"]:checked');
+        produtoCheckboxes.forEach(checkbox => selectedProdutos.push(checkbox.value));
+        if (selectedProdutos.length > 0) {
+          textLines.push(`PRODUTOS NEGOCIADOS: ${selectedProdutos.join(', ')}`);
+        }
+        addTextLine("A PROPOSTA ESTÁ ACIMA DO SUGERIDO POR PRICING", "acima_sugerido");
+        addImageLine("PRINT DO DASH CLIENTE", "dash_cliente_reprec");
+        addImageLine("PRINT PNL RENEG COM AS CONDIÇÕES DA REPREC E AS CONDIÇÕES DESEJADAS", "pnl_reprec");
+
+      } else { // Covers rentab, reneg, rev, churn
+        addTextLine("ID", "id_cliente");
+        addTextLine("Tier da Conta", "tier_conta");
+        const isGeSelect = document.getElementById("is_ge");
+        if (isGeSelect && isGeSelect.value === "SIM") {
+          addTextLine("Tier do GE", "tier_ge");
+        }
+        
+        const selectedProdutos = [];
+        const produtoCheckboxes = document.querySelectorAll('#produtos-checkboxes input[type="checkbox"]:checked');
+        produtoCheckboxes.forEach(checkbox => selectedProdutos.push(checkbox.value));
+        if (selectedProdutos.length > 0) {
+          textLines.push(`PRODUTOS RENEGOCIADOS: ${selectedProdutos.join(', ')}`);
+        }
+
+        const aprovadoSelect = document.getElementById("aprovado");
+        if(aprovadoSelect){
+            if (aprovadoSelect.value === "SIM") {
+              addTextLine("LINK DA THREAD", "thread");
+            } else {
+              addStaticTextLine(`CONDIÇÃO JÁ FOI APROVADA POR PRICING? ${aprovadoSelect.value}`);
+            }
+        }
+        
+        const concorrenteSelect = document.getElementById("concorrente");
+        if(concorrenteSelect){
+            if (concorrenteSelect.value === "SIM") {
+              addImageLine("Print da proposta do concorrente", "taxa");
+              if (document.getElementById("comparativo")) {
+                addImageLine("Print do comparativo de taxas", "comparativo");
+              }
+            } else {
+              addStaticTextLine(`CLIENTE POSSUI PROPOSTA DE CONCORRENTE? ${concorrenteSelect.value}`);
+            }
+        }
+
+        const volumeSelect = document.getElementById("volume");
+        if (volumeSelect) { 
+            if (volumeSelect.value === "SIM") {
+                addImageLine("Print do comprovante de faturamento", "faturamento");
+            } else {
+                addStaticTextLine(`Possui volume adicional? ${volumeSelect.value}`);
+            }
+        }
+        
+        if (isGeSelect) {
+            if (isGeSelect.value === "SIM") {
+                addImageLine("Print da Dash GE", "dash_ge_extra");
+                addImageLine("PnL Reneg com as condições do GE", "pnl_ge_extra");
+            } else {
+                addStaticTextLine(`ESSE CLIENTE COMPÕE UM GRUPO ECONÔMICO? ${isGeSelect.value}`);
+                addImageLine("Print do PNL Reneg com as condições atuais e as novas", "PnL");
+            }
+        }
+        addImageLine("Print do DASH Cliente", "dash_cleinte");
+      }
+
+      addTextLine("Justificativa", "justificativa");
+
+      let finalMacro = textLines.join('\n');
+      
+      if (imageLines.length > 0) {
+          finalMacro += '\n\n' + 'LISTA DE IMAGENS A SEREM ANEXADAS:';
+          finalMacro += '\n' + imageLines.join('\n');
+      }
+
+      document.getElementById("resultado").innerText = finalMacro;
+    }
+  </script>
+</body>
+</html>
