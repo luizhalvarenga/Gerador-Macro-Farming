@@ -96,7 +96,7 @@
         <option value="30k-50k">30k-50k</option><option value="50k-100k">50k-100k</option><option value="100k-250k">100k-250k</option>
         <option value="250k-500k">250k-500k</option><option value="500k-1M">500k-1M</option><option value="1M+">1M+</option>
       `;
-
+      
       const idFieldHtml = `<label>ID:</label><input id="id_cliente" type="text" />`;
       const tierContaHtml = `<label>TIER DA CONTA:</label><select id="tier_conta">${tierOptions}</select>`;
       
@@ -219,18 +219,27 @@
         document.getElementById("resultado").innerText = "SELECIONE UM TIPO DE CASO PRIMEIRO.";
         return;
       }
-
+      
+      // Helper para campos de seleção (valor em maiúsculo)
       const addTextLine = (label, elementId) => {
         const element = document.getElementById(elementId);
         if (element && element.value) {
           textLines.push(`${label.toUpperCase()}: ${element.value.trim().toUpperCase()}`);
         }
       };
+      
+      // **NOVO HELPER AQUI** para campos de texto livre (preserva o texto original)
+      const addTextLineMixedCase = (label, elementId) => {
+        const element = document.getElementById(elementId);
+        if (element && element.value) {
+          textLines.push(`${label.toUpperCase()}: ${element.value.trim()}`);
+        }
+      };
 
       const addImageLine = (label, elementId) => {
         const element = document.getElementById(elementId);
         if (element) {
-          imageLines.push(`- ${label.toUpperCase()}: ${element.value.trim().toUpperCase()}`);
+          imageLines.push(`- ${label.toUpperCase()}: ${element.value.trim()}`);
         }
       };
       
@@ -243,23 +252,23 @@
       if (tipo === "ge") {
         addTextLine("Tier da Conta", "tier_conta");
         addTextLine("Tier do GE", "tier_ge");
-        addTextLine("ID DO CLIENTE APROVADO ANTERIORMENTE", "id_aprovado");
+        addTextLineMixedCase("ID DO CLIENTE APROVADO ANTERIORMENTE", "id_aprovado");
         addImageLine("Print do DASH Cliente da cotação espelhada", "dash_cleinte");
         addImageLine("Print do DASH Cliente do GE", "dash_ge");
         addImageLine("Print do PNL Reneg com as condições atuais e as novas", "PnL");
 
       } else if (tipo === "isencao_saque") {
-        addTextLine("ID", "id_cliente");
+        addTextLineMixedCase("ID", "id_cliente");
         const aprovadoSelect = document.getElementById("aprovado");
         if(aprovadoSelect){
             if (aprovadoSelect.value === "SIM") {
-              addTextLine("LINK DA THREAD", "thread");
+              addTextLineMixedCase("LINK DA THREAD", "thread");
             } else {
               addStaticTextLine(`CONDIÇÃO JÁ FOI APROVADA POR PRICING? ${aprovadoSelect.value}`);
             }
         }
         addTextLine("Qual o banco utilizado", "banco_cliente");
-        addTextLine("Número de Recebedores", "num_recebedores");
+        addTextLineMixedCase("Número de Recebedores", "num_recebedores");
         const bancoSelect = document.getElementById("banco_cliente");
         if (bancoSelect && (bancoSelect.value === "BRADESCO" || bancoSelect.value === "OUTROS")) {
             const tinhaIsencaoSelect = document.getElementById("tinha_isencao");
@@ -275,16 +284,16 @@
         addImageLine("Comprovante do número de recebedores", "comprovante_recebedores");
       
       } else if (tipo === "reneg_reprec") {
-        addTextLine("ID", "id_cliente");
+        addTextLineMixedCase("ID", "id_cliente");
         const aprovadoSelect = document.getElementById("aprovado");
         if(aprovadoSelect){
             if (aprovadoSelect.value === "SIM") {
-                addTextLine("LINK DA THREAD", "thread");
+                addTextLineMixedCase("LINK DA THREAD", "thread");
             } else {
                 addStaticTextLine(`CONDIÇÃO JÁ FOI APROVADA POR PRICING? ${aprovadoSelect.value}`);
             }
         }
-        addTextLine("MÊS E ANO REPRECIFICAÇÃO", "mes_ano_reprec");
+        addTextLineMixedCase("MÊS E ANO REPRECIFICAÇÃO", "mes_ano_reprec");
         const selectedProdutos = [];
         const produtoCheckboxes = document.querySelectorAll('#produtos-checkboxes input[type="checkbox"]:checked');
         produtoCheckboxes.forEach(checkbox => selectedProdutos.push(checkbox.value));
@@ -296,7 +305,7 @@
         addImageLine("PRINT PNL RENEG COM AS CONDIÇÕES DA REPREC E AS CONDIÇÕES DESEJADAS", "pnl_reprec");
 
       } else { // Covers rentab, reneg, rev, churn
-        addTextLine("ID", "id_cliente");
+        addTextLineMixedCase("ID", "id_cliente");
         addTextLine("Tier da Conta", "tier_conta");
         const isGeSelect = document.getElementById("is_ge");
         if (isGeSelect && isGeSelect.value === "SIM") {
@@ -313,7 +322,7 @@
         const aprovadoSelect = document.getElementById("aprovado");
         if(aprovadoSelect){
             if (aprovadoSelect.value === "SIM") {
-              addTextLine("LINK DA THREAD", "thread");
+              addTextLineMixedCase("LINK DA THREAD", "thread");
             } else {
               addStaticTextLine(`CONDIÇÃO JÁ FOI APROVADA POR PRICING? ${aprovadoSelect.value}`);
             }
@@ -352,7 +361,7 @@
         addImageLine("Print do DASH Cliente", "dash_cleinte");
       }
 
-      addTextLine("Justificativa", "justificativa");
+      addTextLineMixedCase("Justificativa", "justificativa");
 
       let finalMacro = textLines.join('\n');
       
